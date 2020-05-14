@@ -7,6 +7,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShamanPbxService", "ShamanP
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShamanPBXWinForms", "ShamanPbxWinforms\ShamanPBXWinForms.csproj", "{D31EFB53-180C-4D8A-8473-B13D14117592}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShamanClases_CSharp", "..\ShamanClases\ShamanClases_CSharp\ShamanClases_CSharp.csproj", "{E9DEC2D3-6082-454D-8F3D-D2456286371D}"
+EndProject
+Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "ShamanClases", "..\ShamanClases\ShamanClases\ShamanClases.vbproj", "{C67374E5-C7FB-43BB-A9B4-436CBC2E7524}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -31,6 +35,22 @@ Global
 		{D31EFB53-180C-4D8A-8473-B13D14117592}.Release|Any CPU.Build.0 = Release|Any CPU
 		{D31EFB53-180C-4D8A-8473-B13D14117592}.Release|x86.ActiveCfg = Release|Any CPU
 		{D31EFB53-180C-4D8A-8473-B13D14117592}.Release|x86.Build.0 = Release|Any CPU
+		{E9DEC2D3-6082-454D-8F3D-D2456286371D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E9DEC2D3-6082-454D-8F3D-D2456286371D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E9DEC2D3-6082-454D-8F3D-D2456286371D}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{E9DEC2D3-6082-454D-8F3D-D2456286371D}.Debug|x86.Build.0 = Debug|Any CPU
+		{E9DEC2D3-6082-454D-8F3D-D2456286371D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E9DEC2D3-6082-454D-8F3D-D2456286371D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E9DEC2D3-6082-454D-8F3D-D2456286371D}.Release|x86.ActiveCfg = Release|Any CPU
+		{E9DEC2D3-6082-454D-8F3D-D2456286371D}.Release|x86.Build.0 = Release|Any CPU
+		{C67374E5-C7FB-43BB-A9B4-436CBC2E7524}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C67374E5-C7FB-43BB-A9B4-436CBC2E7524}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C67374E5-C7FB-43BB-A9B4-436CBC2E7524}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{C67374E5-C7FB-43BB-A9B4-436CBC2E7524}.Debug|x86.Build.0 = Debug|Any CPU
+		{C67374E5-C7FB-43BB-A9B4-436CBC2E7524}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C67374E5-C7FB-43BB-A9B4-436CBC2E7524}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C67374E5-C7FB-43BB-A9B4-436CBC2E7524}.Release|x86.ActiveCfg = Release|Any CPU
+		{C67374E5-C7FB-43BB-A9B4-436CBC2E7524}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

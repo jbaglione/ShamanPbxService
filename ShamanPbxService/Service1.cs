@@ -36,10 +36,17 @@ namespace ShamanPbxService
                 }
                 else
                 {
-                    if (this.setConexionDB())
+                    if (ConfigurationManager.AppSettings["databaseType"] == "cache")
+                    {
                         LoadCyTConnect();
+                    }
                     else
-                        this.Stop();
+                    {
+                        if (this.setConexionDB())
+                            LoadCyTConnect();
+                        else
+                            this.Stop();
+                    }
                 }
             }
         }
@@ -147,7 +154,7 @@ namespace ShamanPbxService
                         if (init.GetVariablesConexion(true))
                         {
 
-                            if (init.AbrirConexion(modDeclares.cnnDefault) == true)
+                            if (init.AbrirConexion(ShamanExpressDLL.modDeclares.cnnDefault) == true)
                             {
                                 devCnn = true;
                                 flgDBConnect = true;
@@ -342,6 +349,18 @@ namespace ShamanPbxService
                             addLog(true, "ReadCyTRings", "ANI" + vAni);
                             addLog(true, "ReadCyTRings", "CID" + vCid);
                             addLog(true, "ReadCyTRings", "QUE" + vQue);
+                            //string pAge
+                            //string pTelDns
+                            //string pNomCam
+                            //string pTelAni
+                            //int pNroInt
+                            //string pAchGrb
+                            //int pTar = 0
+                        }
+                        else if (ConfigurationManager.AppSettings["databaseType"] == "cache")
+                        {
+                            EmergencyC.ScreenPopUpRing objScreenPopUpRing = new EmergencyC.ScreenPopUpRing(GetConnectionStringCache());
+                            objScreenPopUpRing.SetRing(vAge, vDni, vQue, vAni, Convert.ToInt32(nIterno), vCid);
                         }
                         else
                         {
@@ -421,6 +440,20 @@ namespace ShamanPbxService
             }
 
             return loadCyTConnect;
+        }
+        private ConnectionStringCache GetConnectionStringCache()
+        {
+            ConnectionStringCache cnn = new ConnectionStringCache();
+            cnn.Namespace = ConfigurationManager.AppSettings["cacheNameSpace"];
+            cnn.Port = ConfigurationManager.AppSettings["cachePort"];
+            cnn.Server = ConfigurationManager.AppSettings["cacheServer"];
+            cnn.Aplicacion = ConfigurationManager.AppSettings["cacheShamanAplicacion"];
+            cnn.Centro = ConfigurationManager.AppSettings["cacheShamanCentro"];
+            cnn.User = ConfigurationManager.AppSettings["cacheShamanUser"];
+            cnn.Password = ConfigurationManager.AppSettings["Password"];
+            cnn.UserID = ConfigurationManager.AppSettings["UserID"];
+            //cnn.tangoEmpresaId = ConfigurationManager.AppSettings["tangoEmpresaId"];
+            return cnn;
         }
     }
 }

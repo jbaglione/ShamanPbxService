@@ -32,14 +32,45 @@ namespace ShamanNoscoSQLWinForms
 
             if (ConfigurationManager.AppSettings["source"] == "CyTconnect")
             {
-                setConexionDB();
-                LoadCyTConnect();
+                if (ConfigurationManager.AppSettings["mode"] == "test")
+                {
+                    LoadCyTConnect();
+                }
+                else
+                {
+                    if (ConfigurationManager.AppSettings["databaseType"] == "cache")
+                    {
+                        LoadCyTConnect();
+                    }
+                    else
+                    {
+                        if (this.setConexionDB())
+                            LoadCyTConnect();
+                        else
+                            this.Close();
+                    }
+                }
             }
             else
             {
                 this.tmrRefresh.Enabled = true;
                 this.tmrRefresh_Tick(null, null);
             }
+        }
+
+        private ConnectionStringCache GetConnectionStringCache()
+        {
+            ConnectionStringCache cnn = new ConnectionStringCache();
+            cnn.Namespace = ConfigurationManager.AppSettings["cacheNameSpace"];
+            cnn.Port = ConfigurationManager.AppSettings["cachePort"];
+            cnn.Server = ConfigurationManager.AppSettings["cacheServer"];
+            cnn.Aplicacion = ConfigurationManager.AppSettings["cacheShamanAplicacion"];
+            cnn.Centro = ConfigurationManager.AppSettings["cacheShamanCentro"];
+            cnn.User = ConfigurationManager.AppSettings["cacheShamanUser"];
+            cnn.Password = ConfigurationManager.AppSettings["Password"];
+            cnn.UserID = ConfigurationManager.AppSettings["UserID"];
+            //cnn.tangoEmpresaId = ConfigurationManager.AppSettings["tangoEmpresaId"];
+            return cnn;
         }
 
         private void addLog(bool rdo, string logProcedure, string logDescription)
@@ -83,25 +114,38 @@ namespace ShamanNoscoSQLWinForms
 
         private bool setConexionDB()
         {
+
             bool devCnn = flgDBConnect;
+            StartUp init = new StartUp();
 
             try
             {
                 if (devCnn == false)
                 {
-                    StartUp init = new StartUp();
-
                     if (init.GetValoresHardkey(false))
                     {
+
+                        /*
+                        '-------> Revisar antes el registro...
+
+                        '-------> HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Shaman\Express    '-> 64 bits
+                        '-------> HKEY_LOCAL_MACHINE\SOFTWARE\Shaman\Express    '-> 32 bits
+                        '-------> que estén los valores:
+                        '-------> cnnDataSource (SERVER\INSTANCIASQL)
+                        '-------> cnnCatalog (database: Shaman)
+                        '-------> cnnUser (user sql)
+                        '-------> cnnPassword (password sql)
+                        '-------> sysProductos (poner en 1)
+                        */
+
                         if (init.GetVariablesConexion(true))
                         {
 
-                            if (init.AbrirConexion(modDeclares.cnnDefault) == true)
+                            if (init.AbrirConexion(ShamanExpressDLL.modDeclares.cnnDefault) == true)
                             {
                                 devCnn = true;
                                 flgDBConnect = true;
                                 modFechas.InitDateVars();
-                                modNumeros.InitSepDecimal();
 
                                 addLog(true, "setConexionDB", "Conectado a Database Shaman");
                             }
@@ -119,9 +163,7 @@ namespace ShamanNoscoSQLWinForms
                     {
                         addLog(false, "setConexionDB", "No se encuentran los valores HKey - " + init.MyLastExec.ErrorDescription);
                     }
-
                 }
-
             }
 
             catch (Exception ex)
@@ -303,6 +345,7 @@ namespace ShamanNoscoSQLWinForms
         {
             try
             {
+
                 string nIterno = "";
                 string vAge = "";
                 string vAni = "";
@@ -310,7 +353,7 @@ namespace ShamanNoscoSQLWinForms
                 string vCid = "";
                 string vQue = "";
 
-                if (objCYT.GetKeyValue("AEX", nIterno) == 0)
+                if (objCYT.GetKeyValue("AEX", ref nIterno) == 0)
                 {
                     if (Evt == enEvtCommand.cyt_COM_UDP_INBOUND_CALL)
                     {
@@ -322,26 +365,55 @@ namespace ShamanNoscoSQLWinForms
                         objCYT.GetKeyValueCTI(nIterno, "CID", ref vCid);
                         objCYT.GetKeyValueCTI(nIterno, "QUE", ref vQue);
 
-                        conAgentesRing objRing = new conAgentesRing();
-                        conUsuariosAgentes objAgenteUsuario = new conUsuariosAgentes();
-                        objRing.CleanProperties(objRing);
-
-                        objRing.AgenteId = vAge;
-                        objRing.ANI = vAni;
-                        objRing.Campania = vQue;
-                        objRing.flgAtendido = 0;
-                        objRing.UsuarioId.SetObjectId(objAgenteUsuario.GetUsuarioByAgenteId(objRing.AgenteId).ToString());
-                        objRing.GrabacionId = vCid;
-
-                        addLog(true, "ReadCyTRings", "Ring listo para guardar.");
-
-                        if (objRing.Salvar(objRing) == true)
+                        if (ConfigurationManager.AppSettings["mode"] == "test")
                         {
-                            addLog(true, "ReadNoscoRings", "Ring Agente " + objRing.AgenteId);
+                            addLog(true, "ReadCyTRings", "Valores: ");
+                            addLog(true, "ReadCyTRings", "AEX" + nIterno);
+                            addLog(true, "ReadCyTRings", "AID" + vAge);
+                            addLog(true, "ReadCyTRings", "DNS" + vDni);
+                            addLog(true, "ReadCyTRings", "ANI" + vAni);
+                            addLog(true, "ReadCyTRings", "CID" + vCid);
+                            addLog(true, "ReadCyTRings", "QUE" + vQue);
+                            //string pAge
+                            //string pTelDns
+                            //string pNomCam
+                            //string pTelAni
+                            //int pNroInt
+                            //string pAchGrb
+                            //int pTar = 0
+                        }
+                        else if (ConfigurationManager.AppSettings["databaseType"] == "cache")
+                        {
+                            EmergencyC.ScreenPopUpRing objScreenPopUpRing = new EmergencyC.ScreenPopUpRing();
+                            //string pAge, pTelDns, pNomCam, pTelAni, pNroInt, pAchGrb, pTar = 0
+                            objScreenPopUpRing.SetRing(vAge, vDni, vQue, vAni, Convert.ToInt32(nIterno), vCid, 0);
                         }
                         else
                         {
-                            addLog(false, "ReadNoscoRings", "Al grabar Ring Agente " + objRing.AgenteId);
+                            conAgentesRing objRing = new conAgentesRing();
+                            conUsuariosAgentes objAgenteUsuario = new conUsuariosAgentes();
+
+                            if (!objRing.Abrir(objRing.GetIDByAgenteId(vAge).ToString()))
+                            {
+                                objRing.AgenteId = vAge;
+                            }
+
+                            objRing.ANI = vAni;
+                            objRing.Campania = vQue;
+                            objRing.flgAtendido = 0;
+                            objRing.UsuarioId.SetObjectId(objAgenteUsuario.GetUsuarioByAgenteId(objRing.AgenteId).ToString());
+                            objRing.GrabacionId = vCid;
+
+                            addLog(true, "ReadCyTRings", "Ring listo para guardar.");
+
+                            if (objRing.Salvar(objRing) == true)
+                            {
+                                addLog(true, "ReadCyTRings", "Ring Agente " + objRing.AgenteId);
+                            }
+                            else
+                            {
+                                addLog(false, "ReadCyTRings", string.Format("Al grabar Ring Agente {0} - Error: {1}", vAge, objRing.MyLastExec.ErrorDescription));
+                            }
                         }
                     }
                 }
