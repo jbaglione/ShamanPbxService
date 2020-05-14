@@ -15,25 +15,35 @@ using ShamanExpressDLL;
 
 using MySql.Data.MySqlClient;
 using System.Configuration;
+using CyTconnect;
 
 namespace ShamanNoscoSQLWinForms
 {
-    public partial class frmLog : Form
+    public partial class    frmLog : Form
     {
 
         bool flgDBConnect = false;
+        objCyTconnect objCYT;
 
         public frmLog()
         {
-            InitializeComponent();
-            this.tmrRefresh.Enabled = true;
-            this.tmrRefresh_Tick(null, null);
-        }
 
+            InitializeComponent();
+
+            if (ConfigurationManager.AppSettings["source"] == "CyTconnect")
+            {
+                setConexionDB();
+                LoadCyTConnect();
+            }
+            else
+            {
+                this.tmrRefresh.Enabled = true;
+                this.tmrRefresh_Tick(null, null);
+            }
+        }
 
         private void addLog(bool rdo, string logProcedure, string logDescription)
         {
-
             string path;
 
             path = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
@@ -63,7 +73,6 @@ namespace ShamanNoscoSQLWinForms
             }
 
         }
-
 
         private void addLogActividad(bool rdo, string logProcedure, string logDescription)
         {
@@ -125,16 +134,14 @@ namespace ShamanNoscoSQLWinForms
 
         }
 
-
-
         private void ReadMySqlRings()
         {
-            #if DEBUG
+#if DEBUG
                 string connetionString = ConfigurationManager.AppSettings["MySqlConnetionStringDESA"];
-            #else
-                string connetionString = ConfigurationManager.AppSettings["MySqlConnetionString"];
-            #endif
-            
+#else
+            string connetionString = ConfigurationManager.AppSettings["MySqlConnetionString"];
+#endif
+
             try
             {
                 using (MySqlConnection cnn = new MySqlConnection(connetionString))
@@ -229,37 +236,29 @@ namespace ShamanNoscoSQLWinForms
 
             try
             {
-
-                String result;
-
+                string result;
                 using (WebClient client = new WebClient())
                 {
                     result = client.DownloadString(ConfigurationManager.AppSettings["urlNosco"]);
                 }
 
-
                 if (result != "")
                 {
-
                     conAgentesRing objRing = new conAgentesRing();
                     conUsuariosAgentes objAgenteUsuario = new conUsuariosAgentes();
 
-                    String[] vRegs = result.Split(Environment.NewLine.ToCharArray());
+                    string[] vRegs = result.Split(Environment.NewLine.ToCharArray());
 
                     if (vRegs.Length > 0)
                     {
-
                         for (int i = 0; i < vRegs.Length; i++)
                         {
-
-                            String[] vCall = vRegs[i].Split(';');
+                            string[] vCall = vRegs[i].Split(';');
 
                             if (vCall.Length > 1)
                             {
-
                                 if ((vCall[3] == "41") || (vCall[3] == "50"))
                                 {
-
                                     objRing.CleanProperties(objRing);
 
                                     objRing.AgenteId = vCall[1];
@@ -277,36 +276,84 @@ namespace ShamanNoscoSQLWinForms
                                     {
                                         addLog(false, "ReadNoscoRings", "Al grabar Ring Agente " + objRing.AgenteId);
                                     }
-
                                 }
                                 else
                                 {
                                     addLog(false, "ReadNoscoRings", "Agente " + vCall[1] + " no estaba en estado ring");
                                 }
                             }
-
                         }
                     }
                     else
                     {
-                        addLog(false, "ReadNoscoRings", "No hay llamadas entrantes");
+                        addLog(true, "ReadNoscoRings", "No hay llamadas entrantes");
                     }
 
                     objRing = null;
-
                 }
-
             }
 
             catch (Exception ex)
             {
                 addLog(false, "ReadNoscoRings", ex.Message);
             }
-
         }
 
+        void ReadCyTRings(ref enEvtCommand Evt, ref int CodTerm)
+        {
+            try
+            {
+                string nIterno = "";
+                string vAge = "";
+                string vAni = "";
+                string vDni = "";
+                string vCid = "";
+                string vQue = "";
 
-        private void tmrRefresh_Tick(object sender, System.EventArgs e)
+                if (objCYT.GetKeyValue("AEX", nIterno) == 0)
+                {
+                    if (Evt == enEvtCommand.cyt_COM_UDP_INBOUND_CALL)
+                    {
+                        addLog(true, "ReadCyTRings", "Ring capturado");
+
+                        objCYT.GetKeyValueCTI(nIterno, "AID", ref vAge);
+                        objCYT.GetKeyValueCTI(nIterno, "DNS", ref vDni);
+                        objCYT.GetKeyValueCTI(nIterno, "ANI", ref vAni);
+                        objCYT.GetKeyValueCTI(nIterno, "CID", ref vCid);
+                        objCYT.GetKeyValueCTI(nIterno, "QUE", ref vQue);
+
+                        conAgentesRing objRing = new conAgentesRing();
+                        conUsuariosAgentes objAgenteUsuario = new conUsuariosAgentes();
+                        objRing.CleanProperties(objRing);
+
+                        objRing.AgenteId = vAge;
+                        objRing.ANI = vAni;
+                        objRing.Campania = vQue;
+                        objRing.flgAtendido = 0;
+                        objRing.UsuarioId.SetObjectId(objAgenteUsuario.GetUsuarioByAgenteId(objRing.AgenteId).ToString());
+                        objRing.GrabacionId = vCid;
+
+                        addLog(true, "ReadCyTRings", "Ring listo para guardar.");
+
+                        if (objRing.Salvar(objRing) == true)
+                        {
+                            addLog(true, "ReadNoscoRings", "Ring Agente " + objRing.AgenteId);
+                        }
+                        else
+                        {
+                            addLog(false, "ReadNoscoRings", "Al grabar Ring Agente " + objRing.AgenteId);
+                        }
+                    }
+                }
+            }
+
+            catch (Exception ex)
+            {
+                addLog(false, "ReadNoscoRings", ex.Message);
+            }
+        }
+
+        private void tmrRefresh_Tick(object sender, EventArgs e)
         {
 
             this.tmrRefresh.Enabled = false;
@@ -316,12 +363,10 @@ namespace ShamanNoscoSQLWinForms
             {
                 if (ConfigurationManager.AppSettings["source"] == "MySql")
                 {
-                    /*------> Proceso <--------*/
                     this.ReadMySqlRings();
                 }
-                else
+                else if (ConfigurationManager.AppSettings["source"] == "Nosco")
                 {
-                    /*------> Proceso <--------*/
                     this.ReadNoscoRings();
                 }
             }
@@ -330,6 +375,48 @@ namespace ShamanNoscoSQLWinForms
 
         }
 
+        public bool LoadCyTConnect()
+        {
+            bool loadCyTConnect = false;
+            addLog(true, "LoadCyTConnect", "Inicializando CYT");
+            if (objCYT == null)
+            {
+                objCYT = new objCyTconnect();
+            }
+
+            if (objCYT.Init("") == 0)
+            {
+                string sServidor = ConfigurationManager.AppSettings["mCyTServer"];
+                int iPort = int.Parse(ConfigurationManager.AppSettings["mCyTPort"]);
+
+                addLog(true, "LoadCyTConnect", "Conectando a servidor: " + sServidor + ", Puerto: " + iPort);
+
+                if ((objCYT.ConnectCTI(ref sServidor, ref iPort) == 0))
+                {
+                    loadCyTConnect = true;
+                }
+                else
+                {
+                    addLog(false, "LoadCyTConnect", objCYT.GetLastErrorDescription());
+                }
+            }
+            else
+            {
+                addLog(false, "LoadCyTConnect", objCYT.GetLastErrorDescription());
+            }
+
+            if (loadCyTConnect && objCYT != null)
+            {
+                objCYT.NewEvent += new __objCyTconnect_NewEventEventHandler(ReadCyTRings);
+                addLog(true, "frmLog", "ReadCyTRings atachha NewEvent OK");
+            }
+            else
+            {
+                addLog(false, "frmLog", "Error objCYT es nulo");
+            }
+
+            return loadCyTConnect;
+        }
 
     }
 }

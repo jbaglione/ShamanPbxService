@@ -14,6 +14,7 @@ using ShamanExpressDLL;
 
 using MySql.Data.MySqlClient;
 using System.Configuration;
+using CyTconnect;
 
 namespace ShamanPbxService
 {
@@ -22,19 +23,36 @@ namespace ShamanPbxService
 
         Timer t = new Timer();
         bool flgDBConnect = false;
-
+        objCyTconnect objCYT;
 
         public Service1()
         {
             InitializeComponent();
+            if (ConfigurationManager.AppSettings["source"] == "CyTconnect")
+            {
+                if (ConfigurationManager.AppSettings["mode"] == "test")
+                {
+                    LoadCyTConnect();
+                }
+                else
+                {
+                    if (this.setConexionDB())
+                        LoadCyTConnect();
+                    else
+                        this.Stop();
+                }
+            }
         }
 
 
         protected override void OnStart(string[] args)
         {
-            t.Elapsed += delegate { ElapsedHandler(); };
-            t.Interval = Convert.ToInt64(ConfigurationManager.AppSettings["TimeInterval"]);
-            t.Start();
+            if (ConfigurationManager.AppSettings["source"] != "CyTconnect")
+            {
+                t.Elapsed += delegate { ElapsedHandler(); };
+                t.Interval = Convert.ToInt64(ConfigurationManager.AppSettings["TimeInterval"]);
+                t.Start();
+            }
         }
 
         protected override void OnPause()
@@ -55,22 +73,17 @@ namespace ShamanPbxService
 
         public void ElapsedHandler()
         {
-            /*------> Conecto a DB <---------*/
             if (this.setConexionDB())
             {
                 if (ConfigurationManager.AppSettings["source"] == "MySql")
                 {
-                    /*------> Proceso <--------*/
                     this.ReadMySqlRings();
                 }
-                else
+                else if (ConfigurationManager.AppSettings["source"] == "Nosco")
                 {
-                    /*------> Proceso <--------*/
                     this.ReadNoscoRings();
                 }
-
             }
-
         }
 
         private void addLog(bool rdo, string logProcedure, string logDescription)
@@ -113,10 +126,8 @@ namespace ShamanPbxService
 
             try
             {
-
                 if (devCnn == false)
                 {
-
                     if (init.GetValoresHardkey(false))
                     {
 
@@ -158,9 +169,7 @@ namespace ShamanPbxService
                     {
                         addLog(false, "setConexionDB", "No se encuentran los valores HKey - " + init.MyLastExec.ErrorDescription);
                     }
-
                 }
-
             }
 
             catch (Exception ex)
@@ -237,38 +246,29 @@ namespace ShamanPbxService
 
             try
             {
-
-
-                String result;
-
+                string result;
                 using (WebClient client = new WebClient())
                 {
                     result = client.DownloadString(ConfigurationManager.AppSettings["urlNosco"]);
                 }
 
-
                 if (result != "")
                 {
-
                     conAgentesRing objRing = new conAgentesRing();
                     conUsuariosAgentes objAgenteUsuario = new conUsuariosAgentes();
 
-                    String[] vRegs = result.Split(Environment.NewLine.ToCharArray());
+                    string[] vRegs = result.Split(Environment.NewLine.ToCharArray());
 
                     if (vRegs.Length > 0)
                     {
-
                         for (int i = 0; i < vRegs.Length; i++)
                         {
-
-                            String[] vCall = vRegs[i].Split(';');
+                            string[] vCall = vRegs[i].Split(';');
 
                             if (vCall.Length > 1)
                             {
-
                                 if ((vCall[3] == "41") || (vCall[3] == "50"))
                                 {
-
                                     objRing.CleanProperties(objRing);
 
                                     objRing.AgenteId = vCall[1];
@@ -286,14 +286,12 @@ namespace ShamanPbxService
                                     {
                                         addLog(false, "ReadNoscoRings", "Al grabar Ring Agente " + objRing.AgenteId);
                                     }
-
                                 }
                                 else
                                 {
                                     addLog(false, "ReadNoscoRings", "Agente " + vCall[1] + " no estaba en estado ring");
                                 }
                             }
-
                         }
                     }
                     else
@@ -302,17 +300,127 @@ namespace ShamanPbxService
                     }
 
                     objRing = null;
-
                 }
-
             }
 
             catch (Exception ex)
             {
                 addLog(false, "ReadNoscoRings", ex.Message);
             }
-
         }
 
+        void ReadCyTRings(ref enEvtCommand Evt, ref int CodTerm)
+        {
+            try
+            {
+
+                string nIterno = "";
+                string vAge = "";
+                string vAni = "";
+                string vDni = "";
+                string vCid = "";
+                string vQue = "";
+
+                if (objCYT.GetKeyValue("AEX", ref nIterno) == 0)
+                {
+                    if (Evt == enEvtCommand.cyt_COM_UDP_INBOUND_CALL)
+                    {
+                        addLog(true, "ReadCyTRings", "Ring capturado");
+
+                        objCYT.GetKeyValueCTI(nIterno, "AID", ref vAge);
+                        objCYT.GetKeyValueCTI(nIterno, "DNS", ref vDni);
+                        objCYT.GetKeyValueCTI(nIterno, "ANI", ref vAni);
+                        objCYT.GetKeyValueCTI(nIterno, "CID", ref vCid);
+                        objCYT.GetKeyValueCTI(nIterno, "QUE", ref vQue);
+
+                        if (ConfigurationManager.AppSettings["mode"] == "test")
+                        {
+                            addLog(true, "ReadCyTRings", "Valores: ");
+                            addLog(true, "ReadCyTRings", "AEX" + nIterno);
+                            addLog(true, "ReadCyTRings", "AID" + vAge);
+                            addLog(true, "ReadCyTRings", "DNS" + vDni);
+                            addLog(true, "ReadCyTRings", "ANI" + vAni);
+                            addLog(true, "ReadCyTRings", "CID" + vCid);
+                            addLog(true, "ReadCyTRings", "QUE" + vQue);
+                        }
+                        else
+                        {
+                            conAgentesRing objRing = new conAgentesRing();
+                            conUsuariosAgentes objAgenteUsuario = new conUsuariosAgentes();
+
+                            if (!objRing.Abrir(objRing.GetIDByAgenteId(vAge).ToString()))
+                            {
+                                objRing.AgenteId = vAge;
+                            }
+
+                            objRing.ANI = vAni;
+                            objRing.Campania = vQue;
+                            objRing.flgAtendido = 0;
+                            objRing.UsuarioId.SetObjectId(objAgenteUsuario.GetUsuarioByAgenteId(objRing.AgenteId).ToString());
+                            objRing.GrabacionId = vCid;
+
+                            addLog(true, "ReadCyTRings", "Ring listo para guardar.");
+
+                            if (objRing.Salvar(objRing) == true)
+                            {
+                                addLog(true, "ReadCyTRings", "Ring Agente " + objRing.AgenteId);
+                            }
+                            else
+                            {
+                                addLog(false, "ReadCyTRings", string.Format("Al grabar Ring Agente {0} - Error: {1}", vAge, objRing.MyLastExec.ErrorDescription));
+                            }
+                        }
+                    }
+                }
+            }
+
+            catch (Exception ex)
+            {
+                addLog(false, "ReadNoscoRings", ex.Message);
+            }
+        }
+
+        public bool LoadCyTConnect()
+        {
+            bool loadCyTConnect = false;
+            addLog(true, "LoadCyTConnect", "Inicializando CYT");
+            if (objCYT == null)
+            {
+                objCYT = new objCyTconnect();
+            }
+
+            if (objCYT.Init("") == 0)
+            {
+                string sServidor = ConfigurationManager.AppSettings["mCyTServer"];
+                int iPort = int.Parse(ConfigurationManager.AppSettings["mCyTPort"]);
+
+                addLog(true, "LoadCyTConnect", "Conectando a servidor: " + sServidor + ", Puerto: " + iPort);
+
+                if ((objCYT.ConnectCTI(ref sServidor, ref iPort) == 0))
+                {
+                    loadCyTConnect = true;
+                }
+                else
+                {
+                    addLog(false, "LoadCyTConnect", objCYT.GetLastErrorDescription());
+                }
+            }
+            else
+            {
+                addLog(false, "LoadCyTConnect", objCYT.GetLastErrorDescription());
+            }
+
+            if (loadCyTConnect && objCYT != null)
+            {
+                objCYT.NewEvent += new __objCyTconnect_NewEventEventHandler(ReadCyTRings);
+                addLog(true, "frmLog", "ReadCyTRings atachha NewEvent OK");
+            }
+            else
+            {
+                addLog(false, "frmLog", "Error objCYT es nulo");
+            }
+
+            return loadCyTConnect;
+        }
     }
 }
