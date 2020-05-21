@@ -68,13 +68,13 @@
     <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Interop.CyTconnect">
+      <HintPath>dlls\Interop.CyTconnect.dll</HintPath>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </Reference>
     <Reference Include="MySql.Data, Version=6.3.5.0, Culture=neutral, PublicKeyToken=c5687fc88969c44d, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>dlls\MySql.Data.dll</HintPath>
-    </Reference>
-    <Reference Include="ShamanExpressDLL, Version=1.0.6.0, Culture=neutral, processorArchitecture=x86">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\ShamanExpressDLL\bin\Debug\ShamanExpressDLL.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
@@ -168,17 +168,6 @@
     <Content Include="estadisticas.ico" />
   </ItemGroup>
   <ItemGroup>
-    <COMReference Include="CyTconnect">
-      <Guid>{C81A9F1D-E396-4D8C-A26C-3F8463712697}</Guid>
-      <VersionMajor>2</VersionMajor>
-      <VersionMinor>12</VersionMinor>
-      <Lcid>0</Lcid>
-      <WrapperTool>tlbimp</WrapperTool>
-      <Isolated>False</Isolated>
-      <EmbedInteropTypes>True</EmbedInteropTypes>
-    </COMReference>
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\..\ShamanClases\ShamanClases\ShamanClases.vbproj">
       <Project>{c67374e5-c7fb-43bb-a9b4-436cbc2e7524}</Project>
       <Name>ShamanClases</Name>
@@ -186,6 +175,10 @@
     <ProjectReference Include="..\..\ShamanClases\ShamanClases_CSharp\ShamanClases_CSharp.csproj">
       <Project>{e9dec2d3-6082-454d-8f3d-d2456286371d}</Project>
       <Name>ShamanClases_CSharp</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\ShamanExpressDLL\ShamanExpressDLL.vbproj">
+      <Project>{1a8dfae4-4e6f-4ad5-9b09-cfa395aa2065}</Project>
+      <Name>ShamanExpressDLL</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
