@@ -217,22 +217,22 @@ namespace ShamanPbxService
                                     conUsuariosAgentes objAgenteUsuario = new conUsuariosAgentes();
                                     conAgentesRing objRing = new conAgentesRing();
 
-                                    if (!(objRing.Abrir(objRing.GetIDByAgenteId(row["agente"].ToString()).ToString())
-                                        && objRing.ANI == row["cid"].ToString()))
+                                    if (!objRing.Abrir(objRing.GetIDByAgenteId(row["agente"].ToString()).ToString()))
                                     {
                                         objRing.AgenteId = row["agente"].ToString();
-                                        objRing.ANI = row["cid"].ToString();
-                                        objRing.Campania = "GRUPO EMERGER";//row["dst"].ToString();
-                                        objRing.flgAtendido = 0;
-                                        string idUsuario = objAgenteUsuario.GetUsuarioByAgenteId(objRing.AgenteId).ToString();
-                                        objRing.UsuarioId.SetObjectId(idUsuario);
-                                        objRing.GrabacionId = row["cu"].ToString();
-
-                                        if (objRing.Salvar(objRing))
-                                            addLog(true, "ReadMySqlRings", "Ring Agente " + objRing.AgenteId);
-                                        else
-                                            addLog(false, "ReadMySqlRings", "Al grabar Ring Agente " + objRing.AgenteId);
                                     }
+
+                                    objRing.ANI = row["cid"].ToString();
+                                    objRing.Campania = "GRUPO EMERGER";//row["dst"].ToString();
+                                    objRing.flgAtendido = 0;
+                                    string idUsuario = objAgenteUsuario.GetUsuarioByAgenteId(objRing.AgenteId).ToString();
+                                    objRing.UsuarioId.SetObjectId(idUsuario);
+                                    objRing.GrabacionId = row["cu"].ToString();
+
+                                    if (objRing.Salvar(objRing))
+                                        addLog(true, "ReadMySqlRings", "Ring Agente " + objRing.AgenteId);
+                                    else
+                                        addLog(false, "ReadMySqlRings", "Al grabar Ring Agente " + objRing.AgenteId);
                                 }
                             }
                             else
@@ -261,11 +261,11 @@ namespace ShamanPbxService
 
                 if (result != "")
                 {
-                    conAgentesRing objRing = new conAgentesRing();
                     conUsuariosAgentes objAgenteUsuario = new conUsuariosAgentes();
+                    conAgentesRing objRing = new conAgentesRing();
 
                     string[] vRegs = result.Split(Environment.NewLine.ToCharArray());
-
+                    string msj;
                     if (vRegs.Length > 0)
                     {
                         for (int i = 0; i < vRegs.Length; i++)
@@ -276,14 +276,21 @@ namespace ShamanPbxService
                             {
                                 if ((vCall[3] == "41") || (vCall[3] == "50"))
                                 {
-                                    objRing.CleanProperties(objRing);
 
-                                    objRing.AgenteId = vCall[1];
+                                    if (!objRing.Abrir(objRing.GetIDByAgenteId(vCall[1]).ToString()))
+                                    {
+                                        objRing.AgenteId = vCall[1];
+                                    }
                                     objRing.ANI = vCall[5];
                                     objRing.Campania = vCall[4];
                                     objRing.flgAtendido = 0;
-                                    objRing.UsuarioId.SetObjectId(objAgenteUsuario.GetUsuarioByAgenteId(objRing.AgenteId).ToString());
+                                    string usuarioId = objAgenteUsuario.GetUsuarioByAgenteId(objRing.AgenteId).ToString();
+                                    objRing.UsuarioId.SetObjectId(usuarioId);
                                     objRing.GrabacionId = vCall[6];
+
+                                    msj = string.Format("Ring listo para guardar. AgenteId={0},ANI={1},Campania={2},flgAtendido={3},UsuarioId={4},GrabacionId={5},)",
+                                        objRing.AgenteId, objRing.ANI, objRing.Campania, 0, usuarioId, objRing.GrabacionId);
+                                    addLog(true, "ReadNoscoRings", msj);
 
                                     if (objRing.Salvar(objRing) == true)
                                     {
@@ -291,12 +298,14 @@ namespace ShamanPbxService
                                     }
                                     else
                                     {
-                                        addLog(false, "ReadNoscoRings", "Al grabar Ring Agente " + objRing.AgenteId);
+                                        addLog(false, "ReadNoscoRings", "Al grabar Ring Agente " + objRing.AgenteId + "Error: " + objRing.MyLastExec.ErrorDescription);
                                     }
+                                                                        
                                 }
                                 else
                                 {
-                                    addLog(false, "ReadNoscoRings", "Agente " + vCall[1] + " no estaba en estado ring");
+                                    msj = string.Format("Agente {0} no estaba en estado ring (estado: {1})", vCall[1], vCall[3]);
+                                    //addLog(false, "ReadNoscoRings", msj);
                                 }
                             }
                         }
@@ -327,6 +336,7 @@ namespace ShamanPbxService
                 string vDni = "";
                 string vCid = "";
                 string vQue = "";
+                string vTid = "";
 
                 if (objCYT.GetKeyValue("AEX", ref nIterno) == 0)
                 {
@@ -339,6 +349,7 @@ namespace ShamanPbxService
                         objCYT.GetKeyValueCTI(nIterno, "ANI", ref vAni);
                         objCYT.GetKeyValueCTI(nIterno, "CID", ref vCid);
                         objCYT.GetKeyValueCTI(nIterno, "QUE", ref vQue);
+                        objCYT.GetKeyValueCTI(nIterno, "TID", ref vTid);
 
                         if (ConfigurationManager.AppSettings["mode"] == "test")
                         {
@@ -349,6 +360,7 @@ namespace ShamanPbxService
                             addLog(true, "ReadCyTRings", "ANI" + vAni);
                             addLog(true, "ReadCyTRings", "CID" + vCid);
                             addLog(true, "ReadCyTRings", "QUE" + vQue);
+                            addLog(true, "ReadCyTRings", "TID" + vTid);
                             //string pAge
                             //string pTelDns
                             //string pNomCam
@@ -360,7 +372,11 @@ namespace ShamanPbxService
                         else if (ConfigurationManager.AppSettings["databaseType"] == "cache")
                         {
                             EmergencyC.ScreenPopUpRing objScreenPopUpRing = new EmergencyC.ScreenPopUpRing(GetConnectionStringCache());
-                            objScreenPopUpRing.SetRing(vAge, vDni, vQue, vAni, Convert.ToInt32(nIterno), vCid);
+
+                            int vTidInt = 0;
+                            int.TryParse(vTid, out vTidInt);
+
+                            objScreenPopUpRing.SetRing(vAge, vDni, "", vAni, Convert.ToInt32(nIterno), vCid, vTidInt);
                         }
                         else
                         {
